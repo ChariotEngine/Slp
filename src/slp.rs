@@ -93,7 +93,19 @@ impl SlpShapeHeader {
         }
     }
 
-    // TODO: Implement writing
+    pub fn write_to<S: Write>(&mut self, stream: &mut S) -> Result<()> {
+        stream.write_u32(self.shape_data_offsets)?;
+        stream.write_u32(self.shape_outline_offset)?;
+        stream.write_u32(self.palette_offset)?;
+        stream.write_u32(self.properties)?;
+        stream.write_u32(self.width)?;
+        stream.write_u32(self.height)?;
+        stream.write_i32(self.center_x)?;
+        stream.write_i32(self.center_y)?;
+
+        Ok(())
+    }
+
 
     fn read_from_file<R: Read + Seek>(file: &mut R) -> Result<SlpShapeHeader> {
         let mut header = SlpShapeHeader::new();
@@ -343,7 +355,7 @@ impl SlpFile {
 
 #[cfg(test)]
 mod tests {
-    use super::{SlpHeader, ErrorKind};
+    use super::{SlpHeader, SlpShapeHeader, ErrorKind};
 
     #[test]
     fn test_slp_header_read_from() {
@@ -389,5 +401,33 @@ mod tests {
         assert_eq!(slp_header.file_version, new_header.file_version);
         assert_eq!(slp_header.shape_count, new_header.shape_count);
         assert_eq!(slp_header.comment, new_header.comment);
+    }
+
+    #[test]
+    fn test_slp_shape_header_write() {
+        let mut slp_shape_header = SlpShapeHeader::new();
+        slp_shape_header.shape_data_offsets = 0u32;
+        slp_shape_header.shape_outline_offset = 1u32;
+        slp_shape_header.palette_offset = 2u32;
+        slp_shape_header.properties = 3u32;
+        slp_shape_header.width = 4u32;
+        slp_shape_header.height = 5u32;
+        slp_shape_header.center_x = 6i32;
+        slp_shape_header.center_y = 7i32;
+
+        let buf = vec![0; 4 * 8];
+        let mut stream = ::std::io::Cursor::new(buf);
+        assert!(slp_shape_header.write_to(&mut stream).is_ok());
+        stream.set_position(0);
+
+        let new_slp_shape_header = SlpShapeHeader::read_from_file(&mut stream).unwrap();
+        assert_eq!(slp_shape_header.shape_data_offsets, slp_shape_header.shape_data_offsets);
+        assert_eq!(slp_shape_header.shape_outline_offset, new_slp_shape_header.shape_outline_offset);
+        assert_eq!(slp_shape_header.palette_offset, new_slp_shape_header.palette_offset);
+        assert_eq!(slp_shape_header.properties, new_slp_shape_header.properties);
+        assert_eq!(slp_shape_header.width, new_slp_shape_header.width);
+        assert_eq!(slp_shape_header.height, new_slp_shape_header.height);
+        assert_eq!(slp_shape_header.center_x, new_slp_shape_header.center_x);
+        assert_eq!(slp_shape_header.center_y, new_slp_shape_header.center_y);
     }
 }

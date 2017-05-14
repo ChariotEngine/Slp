@@ -1,5 +1,6 @@
 // Chariot: An open source reimplementation of Age of Empires (1997)
 // Copyright (c) 2016 Kevin Fuller
+// Copyright (c) 2017 Taryn Hill
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -57,35 +58,6 @@ impl SlpHeader {
             return Err(ErrorKind::InvalidSlp("bad header".into()).into());
         }
         Ok(header)
-    }
-}
-
-#[cfg(test)]
-#[test]
-fn test_slp_header_read_from() {
-    use std::io;
-    let data = "2.0N\x04\0\0\0test\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes();
-    let result = SlpHeader::read_from(&mut io::Cursor::new(data));
-    match result {
-        Ok(slp_header) => assert_eq!(4u32, slp_header.shape_count),
-        Err(e) => panic!("unexpected error: {}", e),
-    }
-}
-
-#[cfg(test)]
-#[test]
-fn test_slp_header_read_from_bad_header() {
-    use std::io;
-    let data = "2.1N\x04\0\0\0test\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes();
-    let result = SlpHeader::read_from(&mut io::Cursor::new(data));
-    match result {
-        Ok(_) => panic!("expected bad header error"),
-        Err(e) => {
-            match e.kind() {
-                &ErrorKind::InvalidSlp(ref reason) => assert_eq!(*reason, "bad header".to_string()),
-                _ => panic!("unexpected error: {}", e),
-            }
-        }
     }
 }
 
@@ -360,5 +332,37 @@ impl SlpFile {
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{SlpHeader, ErrorKind};
+
+    #[test]
+    fn test_slp_header_read_from() {
+        use std::io;
+        let data = "2.0N\x04\0\0\0test\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes();
+        let result = SlpHeader::read_from(&mut io::Cursor::new(data));
+        match result {
+            Ok(slp_header) => assert_eq!(4u32, slp_header.shape_count),
+            Err(e) => panic!("unexpected error: {}", e),
+        }
+    }
+
+    #[test]
+    fn test_slp_header_read_from_bad_header() {
+        use std::io;
+        let data = "2.1N\x04\0\0\0test\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0".as_bytes();
+        let result = SlpHeader::read_from(&mut io::Cursor::new(data));
+        match result {
+            Ok(_) => panic!("expected bad header error"),
+            Err(e) => {
+                match e.kind() {
+                    &ErrorKind::InvalidSlp(ref reason) => assert_eq!(*reason, "bad header".to_string()),
+                    _ => panic!("unexpected error: {}", e),
+                }
+            }
+        }
     }
 }

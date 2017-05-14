@@ -23,7 +23,7 @@
 
 use error::*;
 
-use chariot_io_tools::ReadExt;
+use chariot_io_tools::{ReadExt, WriteExt};
 use std::fs::File;
 use std::io::SeekFrom;
 use std::io::prelude::*;
@@ -46,7 +46,11 @@ impl SlpHeader {
         }
     }
 
-    // TODO: Implement writing
+    pub fn write_to<S: Write>(&mut self, stream: &mut S) {
+        stream.write(&self.file_version[..]).expect("Failed to write file version");
+        stream.write_u32(self.shape_count).expect("Failed to write shape count");
+        stream.write(&self.comment[..]).expect("Failed to write comment");
+    }
 
     pub fn read_from<S: Read>(stream: &mut S) -> Result<SlpHeader> {
         let mut header = SlpHeader::new();
@@ -364,5 +368,24 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn test_slp_header_write() {
+        let mut slp_header = SlpHeader::new();
+        slp_header.file_version = *b"2.0N";
+        slp_header.shape_count = 0u32;
+        slp_header.comment = [0u8; 24];
+
+        let buf = vec![0; 4 + 32 + 24];
+        let mut stream = ::std::io::Cursor::new(buf);
+        slp_header.write_to(&mut stream);
+        stream.set_position(0);
+
+        let new_header = SlpHeader::read_from(&mut stream).unwrap();
+
+        assert_eq!(slp_header.file_version, new_header.file_version);
+        assert_eq!(slp_header.shape_count, new_header.shape_count);
+        assert_eq!(slp_header.comment, new_header.comment);
     }
 }

@@ -46,10 +46,12 @@ impl SlpHeader {
         }
     }
 
-    pub fn write_to<S: Write>(&mut self, stream: &mut S) {
-        stream.write(&self.file_version[..]).expect("Failed to write file version");
-        stream.write_u32(self.shape_count).expect("Failed to write shape count");
-        stream.write(&self.comment[..]).expect("Failed to write comment");
+    pub fn write_to<S: Write>(&mut self, stream: &mut S) -> Result<()> {
+        stream.write(&self.file_version[..])?;
+        stream.write_u32(self.shape_count)?;
+        stream.write(&self.comment[..])?;
+
+        Ok(())
     }
 
     pub fn read_from<S: Read>(stream: &mut S) -> Result<SlpHeader> {
@@ -379,7 +381,7 @@ mod tests {
 
         let buf = vec![0; 4 + 32 + 24];
         let mut stream = ::std::io::Cursor::new(buf);
-        slp_header.write_to(&mut stream);
+        assert!(slp_header.write_to(&mut stream).is_ok());
         stream.set_position(0);
 
         let new_header = SlpHeader::read_from(&mut stream).unwrap();

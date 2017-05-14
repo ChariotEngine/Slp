@@ -229,6 +229,7 @@ impl SlpFile {
         shape.pixels.resize((width * height) as usize, 0u8);
 
         for y in 0..height {
+            println!("*** row {} ***", y);
             let line_outline_offset = shape.header.shape_outline_offset + (y * size_of::<u32>() as u32);
 
             try!(cursor.seek(SeekFrom::Start(line_outline_offset as u64)));
@@ -277,22 +278,67 @@ impl SlpFile {
                     // Block copy
                     0x00 | 0x04 | 0x08 | 0x0C => {
                         let length = try!(SixUpperBit.decode(cmd_byte, cursor));
+                        //println!("'block copy' for {} bytes", length);
                         for _ in 0..length {
-                            shape.pixels[(y * width + x) as usize] = try!(cursor.read_u8());
+                            let val = cursor.read_u8()?;
+
+                            match val {
+                                222
+                                | 221
+                                | 193
+                                | 187
+                                | 186
+                                | 124
+                                | 73
+                                | 58
+                                | 0...9
+                                => {
+                                    println!("(0x00 | 0x04 | 0x08 | 0x0C) shadow {}", val);
+                                    shape.pixels[(y * width + x) as usize] = 1u8;
+                                },
+                                _ => {
+                                    shape.pixels[(y * width + x) as usize] = val;
+                                }
+                            }
+
                             x += 1;
                         }
                     }
 
                     // Skip pixels
                     0x01 | 0x05 | 0x09 | 0x0D => {
-                        x += try!(SixUpperBit.decode(cmd_byte, cursor)) as u32;
+                        let length = try!(SixUpperBit.decode(cmd_byte, cursor)) as u32;
+                        println!("'skip pixels' for {} bytes", length);
+                        x += length;
                     }
 
                     // Large block copy
                     0x02 => {
                         let length = try!(LargeLength.decode(cmd_byte, cursor));
+                        println!("'large block copy' for {} bytes", length);
                         for _ in 0..length {
-                            shape.pixels[(y * width + x) as usize] = try!(cursor.read_u8());
+                            let val = cursor.read_u8()?;
+
+                            match val {
+                                222
+                                | 221
+                                | 193
+                                | 187
+                                | 186
+                                | 124
+                                | 73
+                                | 58
+                                | 0...9
+                                => {
+                                    println!("(0x00 | 0x04 | 0x08 | 0x0C) shadow {}", val);
+                                    shape.pixels[(y * width + x) as usize] = 1u8;
+                                },
+                                _ => {
+                                    shape.pixels[(y * width + x) as usize] = val;
+                                }
+                            }
+
+
                             x += 1;
                         }
                     }
@@ -300,12 +346,14 @@ impl SlpFile {
                     // Large skip pixels
                     0x03 => {
                         let length = try!(LargeLength.decode(cmd_byte, cursor));
+                        println!("'large skip' for {} bytes", length);
                         x += length as u32;
                     }
 
                     // Copy and colorize block
                     0x06 => {
                         let length = try!(FourUpperBit.decode(cmd_byte, cursor));
+                        println!("'copy and colorize' for {} bytes", length);
 
                         for _ in 0..length {
                             let relative_index = try!(cursor.read_u8());
@@ -318,9 +366,28 @@ impl SlpFile {
                     // Fill block
                     0x07 => {
                         let length = try!(FourUpperBit.decode(cmd_byte, cursor));
+                        println!("'fill block' for {} bytes", length);
                         let color = try!(cursor.read_u8());
                         for _ in 0..length {
-                            shape.pixels[(y * width + x) as usize] = color;
+                            match color {
+                                222
+                                | 221
+                                | 193
+                                | 187
+                                | 186
+                                | 124
+                                | 73
+                                | 58
+                                | 0...9
+                                => {
+                                    println!("(0x00 | 0x04 | 0x08 | 0x0C) shadow {}", color);
+                                    shape.pixels[(y * width + x) as usize] = 1u8;
+                                },
+                                _ => {
+                                    shape.pixels[(y * width + x) as usize] = color;
+                                }
+                            }
+
                             x += 1;
                         }
                     }
@@ -328,6 +395,7 @@ impl SlpFile {
                     // Transform block
                     0x0A => {
                         let length = try!(FourUpperBit.decode(cmd_byte, cursor));
+                        println!("'transform block' for {} bytes", length);
                         let relative_index = try!(cursor.read_u8());
                         let player_color = player_index * 16 + relative_index;
 
@@ -339,17 +407,14 @@ impl SlpFile {
 
                     // Shadow pixels
                     0x0B => {
+                        panic!("shadows!");
                         let length = try!(FourUpperBit.decode(cmd_byte, cursor));
-                        // TODO: Render the shadow instead of skipping
-                        // The length is determined as in cases 6, 7 and 0x0a. For the length
-                        // of the run, the destination pixels already in the buffer are used
-                        // as a lookup into a "shadow table" and this lookup pixel is then
-                        // used to draw into the buffer. The shadow table is typically a
-                        // color-tinted variation of the real color table, and is generally
-                        // used to draw things like the red-tinted checkerboard sprites when
-                        // you try to place a building in an area where it cannot be placed.
-                        x += length as u32;
-                        println!("TODO: skipped {} instead of drawing the shadow", length);
+
+                        for _ in 0..length {
+                            // Our renderer (ab)uses index 1 as the shadow color
+                            shape.pixels[(y * width + x) as usize] = 1u8;
+                            x += 1;
+                        }
                     }
 
                     // Extended

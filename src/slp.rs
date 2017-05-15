@@ -31,7 +31,11 @@ use std::mem::size_of;
 
 use std::path::Path;
 
+/// A struct containing SLP metadata.
+///
+/// A single SlpHeader must exist at the beginning of an [SlpFile](struct.SlpFile.html).
 pub struct SlpHeader {
+    /// This should always be `2.0N`
     pub file_version: [u8; 4],
     pub shape_count: u32,
     pub comment: [u8; 24],
@@ -68,8 +72,18 @@ impl SlpHeader {
 }
 
 #[derive(Debug)]
+/// A struct containing frame metadata.
+///
+/// One of these will exists for every frame in an [SlpFile](struct.SlpFile.html).
 pub struct SlpShapeHeader {
+    /// Pointer to an array of offsets.
+    ///
+    /// Each offset defines the position of the first command of a row.
+    ///
+    /// The first offset in this array is the first drawing command for the image.
     pub shape_data_offsets: u32,
+
+    /// Pointer to an array of u16 pairs used to indicate padding.
     pub shape_outline_offset: u32,
     pub palette_offset: u32,
     pub properties: u32,
@@ -169,9 +183,15 @@ impl SlpEncodedLength {
     }
 }
 
+/// An image container format written by Ensemble Studios for their "Genie" game engine.
+///
+/// An SLP is made up of a header and numerous frames (sometimes called "shapes").
 pub struct SlpFile {
     pub header: SlpHeader,
     pub shapes: Vec<SlpLogicalShape>,
+
+    // TODO: Remove this from SlpFile.
+    // We shouldn't be comitting to a player index until we hit the fragment shader.
     pub player_index: u8,
 }
 

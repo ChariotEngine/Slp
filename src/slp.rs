@@ -50,7 +50,7 @@ impl SlpHeader {
         }
     }
 
-    pub fn write_to<S: Write>(&mut self, stream: &mut S) -> Result<()> {
+    pub fn write_to<S: Write>(&self, stream: &mut S) -> Result<()> {
         stream.write(&self.file_version[..])?;
         stream.write_u32(self.shape_count)?;
         stream.write(&self.comment[..])?;
@@ -107,7 +107,7 @@ impl SlpShapeHeader {
         }
     }
 
-    pub fn write_to<S: Write>(&mut self, stream: &mut S) -> Result<()> {
+    pub fn write_to<S: Write>(&self, stream: &mut S) -> Result<()> {
         stream.write_u32(self.shape_data_offsets)?;
         stream.write_u32(self.shape_outline_offset)?;
         stream.write_u32(self.palette_offset)?;

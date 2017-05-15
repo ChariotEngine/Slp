@@ -18,7 +18,30 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-//
+
+//! Start with [SlpFile](slp/struct.SlpFile.html) if you are decoding SLPs.
+//!
+//! ```ascii
+//! +-----------------------------+
+//! |          SlpHeader          |
+//! +-----------------------------+
+//! |SlpShapeHeader|SlpShapeHeader|
+//! +-----------------------------+
+//! |                             |
+//! | Array of u16 padding pairs  | <-+ Each SlpShapeHeader has a "shape_outline_offset"
+//! |                             |     that points to a pair in this array
+//! +-----------------------------+
+//! |                             |
+//! | Arrays of u32 offsets to    | <-+ Each SlpShapeHeader has a "shape_data_offsets"
+//! |  first command in each row  |     that points to an array
+//! |                             |
+//! +-----------------------------+
+//! |                             |
+//! | Drawing commands used to    |
+//! |  produce indexed image data |
+//! |                             |
+//! +-----------------------------+
+//! ```
 
 #![recursion_limit = "1024"] // for the error_chain crate
 

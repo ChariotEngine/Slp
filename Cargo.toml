@@ -2,7 +2,7 @@
 name = "chariot_slp"
 description = "A library for reading/writing Age of Empires (1997) SLP files"
 license = "MIT"
-version = "0.1.1"
+version = "0.1.2"
 keywords = ["slp", "aoe", "empires", "genie", "engine"]
 authors = ["Kevin Fuller <angered.ghandi@gmail.com>"]
 documentation = "https://docs.rs/chariot_slp/"

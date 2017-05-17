@@ -265,9 +265,16 @@ impl SlpFile {
                 }
 
                 use self::SlpEncodedLength::*;
-                match cmd_byte & 0x0F {
+
+                // SLP opcodes are stored in the lowest 4 bits of the command byte.
+                let opcode = cmd_byte & 0b00001111;
+
+                match opcode {
                     // Block copy
-                    0x00 | 0x04 | 0x08 | 0x0C => {
+                    0b0000 |
+                    0b0100 |
+                    0b1000 |
+                    0b1100 => {
                         let length = try!(SixUpperBit.decode(cmd_byte, cursor));
                         for _ in 0..length {
                             shape.pixels[(y * width + x) as usize] = try!(cursor.read_u8());
@@ -276,12 +283,15 @@ impl SlpFile {
                     }
 
                     // Skip pixels
-                    0x01 | 0x05 | 0x09 | 0x0D => {
+                    0b0001 |
+                    0b0101 |
+                    0b1001 |
+                    0b1101 => {
                         x += try!(SixUpperBit.decode(cmd_byte, cursor)) as u32;
                     }
 
                     // Large block copy
-                    0x02 => {
+                    0b0010 => {
                         let length = try!(LargeLength.decode(cmd_byte, cursor));
                         for _ in 0..length {
                             shape.pixels[(y * width + x) as usize] = try!(cursor.read_u8());
@@ -290,13 +300,13 @@ impl SlpFile {
                     }
 
                     // Large skip pixels
-                    0x03 => {
+                    0b0011 => {
                         let length = try!(LargeLength.decode(cmd_byte, cursor));
                         x += length as u32;
                     }
 
                     // Copy and colorize block
-                    0x06 => {
+                    0b0110 => {
                         let length = try!(FourUpperBit.decode(cmd_byte, cursor));
 
                         for _ in 0..length {
@@ -308,7 +318,7 @@ impl SlpFile {
                     }
 
                     // Fill block
-                    0x07 => {
+                    0b0111 => {
                         let length = try!(FourUpperBit.decode(cmd_byte, cursor));
                         let color = try!(cursor.read_u8());
                         for _ in 0..length {
@@ -318,7 +328,7 @@ impl SlpFile {
                     }
 
                     // Transform block
-                    0x0A => {
+                    0b1010 => {
                         let length = try!(FourUpperBit.decode(cmd_byte, cursor));
                         let relative_index = try!(cursor.read_u8());
                         let player_color = player_index * 16 + relative_index;
@@ -330,7 +340,7 @@ impl SlpFile {
                     }
 
                     // Shadow pixels
-                    0x0B => {
+                    0b1011 => {
                         let length = try!(FourUpperBit.decode(cmd_byte, cursor));
                         // TODO: Render the shadow instead of skipping
                         // The length is determined as in cases 6, 7 and 0x0a. For the length
@@ -345,7 +355,11 @@ impl SlpFile {
                     }
 
                     // Extended
-                    0x0E => panic!("Extended (0x0E) not implemented"),
+                    0b1110 => {
+                        // The extended opcode lives in the top 4 bits of the command byte (yes, I lied above).
+                        let opcode = cmd_byte & 0b11110000;
+                        panic!("Extended (0x0E) not implemented (cmd_byte={}, opcode={})", cmd_byte, opcode);
+                    }
 
                     _ => panic!("unknown command: {}", cmd_byte),
                 }

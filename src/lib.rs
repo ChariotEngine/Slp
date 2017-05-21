@@ -55,7 +55,7 @@ mod error;
 mod slp;
 
 #[cfg(feature="chariot_slp_ffi")]
-mod ffi;
+pub mod ffi;
 
 pub use error::ChainErr;
 pub use error::Error;

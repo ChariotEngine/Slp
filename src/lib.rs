@@ -54,6 +54,9 @@ extern crate chariot_io_tools;
 mod error;
 mod slp;
 
+#[cfg(feature="chariot_slp_ffi")]
+mod ffi;
+
 pub use error::ChainErr;
 pub use error::Error;
 pub use error::ErrorKind;

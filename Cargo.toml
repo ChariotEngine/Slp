@@ -12,6 +12,10 @@ readme = "README.md"
 [dependencies]
 error-chain = "0.5"
 chariot_io_tools = "0.1"
+libc = { version = "0.2", optional = true }
 
 [dev-dependencies]
 clap = "2.17"
+
+[features]
+chariot_slp_ffi = ["libc"]

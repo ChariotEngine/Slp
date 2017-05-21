@@ -19,3 +19,7 @@ clap = "2.17"
 
 [features]
 chariot_slp_ffi = ["libc"]
+
+[lib]
+crate-type = ["cdylib"]
+name = "chariot_slp"

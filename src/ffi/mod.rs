@@ -29,11 +29,13 @@ pub extern "C" fn slp_free(image_data_buff: *const c_char, image_data_buff_len: 
 
 #[no_mangle]
 pub extern "C" fn slp_new_from_file(file_path: *const c_char,
-    /* ptr to the 1D byte array  */ out_image_data_buff: *mut *const c_char,
-    /* ptr to the byte array len */ out_image_data_len: *mut size_t) -> ssize_t {
+   /* ptr to the 1D byte array   */ out_image_data_buff: *mut *const c_char,
+   /* ptr to width of the image  */ out_width: *mut size_t,
+   /* ptr to height of the image */ out_height: *mut size_t) -> ssize_t {
 
     unsafe {
-        *out_image_data_len = 0;
+        *out_width = 0;
+        *out_height = 0;
         *out_image_data_buff = ptr::null_mut();
     }
 
@@ -65,8 +67,9 @@ pub extern "C" fn slp_new_from_file(file_path: *const c_char,
     let first_shape = slp.shapes.swap_remove(0);
 
     unsafe {
-        *out_image_data_len = first_shape.pixels.len();
         *out_image_data_buff = first_shape.pixels.as_ptr() as *const c_char;
+        *out_height = first_shape.header.height as usize;
+        *out_width = first_shape.header.width as usize;
     }
 
     ::std::mem::forget(first_shape);

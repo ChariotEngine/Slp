@@ -367,6 +367,7 @@ impl SlpFile {
                         for _ in 0..length {
                             let loc = (y * width + x) as usize;
                             shape.commands[loc] = DrawCommand::Shadow;
+                            x += 1;
                         }
                     }
 

@@ -118,10 +118,20 @@ impl SlpShapeHeader {
 }
 
 pub type SlpPixels = Vec<u8>;
+pub type SlpDrawCommands = Vec<DrawCommand>;
+
+#[derive(Clone)]
+pub enum DrawCommand {
+    Color,
+    Skip,
+    Remap,
+    Shadow,
+}
 
 pub struct SlpLogicalShape {
     pub header: SlpShapeHeader,
     pub pixels: SlpPixels,
+    pub commands: SlpDrawCommands,
 }
 
 impl SlpLogicalShape {
@@ -129,6 +139,7 @@ impl SlpLogicalShape {
         SlpLogicalShape {
             header: SlpShapeHeader::new(),
             pixels: SlpPixels::new(),
+            commands: SlpDrawCommands::new(),
         }
     }
 }
@@ -219,6 +230,7 @@ impl SlpFile {
 
         // Reserve and zero out pixel data
         shape.pixels.resize((width * height) as usize, 0u8);
+        shape.commands.resize((width * height) as usize, DrawCommand::Skip);
 
         for y in 0..height {
             let line_outline_offset = shape.header.shape_outline_offset + (y * size_of::<u32>() as u32);
@@ -277,7 +289,9 @@ impl SlpFile {
                     0b1100 => {
                         let length = try!(SixUpperBit.decode(cmd_byte, cursor));
                         for _ in 0..length {
-                            shape.pixels[(y * width + x) as usize] = try!(cursor.read_u8());
+                            let loc = (y * width + x) as usize;
+                            shape.pixels[loc] = try!(cursor.read_u8());
+                            shape.commands[loc] = DrawCommand::Color;
                             x += 1;
                         }
                     }
@@ -294,7 +308,9 @@ impl SlpFile {
                     0b0010 => {
                         let length = try!(LargeLength.decode(cmd_byte, cursor));
                         for _ in 0..length {
-                            shape.pixels[(y * width + x) as usize] = try!(cursor.read_u8());
+                            let loc = (y * width + x) as usize;
+                            shape.pixels[loc] = try!(cursor.read_u8());
+                            shape.commands[loc] = DrawCommand::Color;
                             x += 1;
                         }
                     }
@@ -312,7 +328,9 @@ impl SlpFile {
                         for _ in 0..length {
                             let relative_index = try!(cursor.read_u8());
                             let player_color = player_index * 16 + relative_index;
-                            shape.pixels[(y * width + x) as usize] = player_color | relative_index;
+                            let loc = (y * width + x) as usize;
+                            shape.pixels[loc] = player_color | relative_index;
+                            shape.commands[loc] = DrawCommand::Remap;
                             x += 1;
                         }
                     }
@@ -322,7 +340,9 @@ impl SlpFile {
                         let length = try!(FourUpperBit.decode(cmd_byte, cursor));
                         let color = try!(cursor.read_u8());
                         for _ in 0..length {
-                            shape.pixels[(y * width + x) as usize] = color;
+                            let loc = (y * width + x) as usize;
+                            shape.pixels[loc] = color;
+                            shape.commands[loc] = DrawCommand::Color;
                             x += 1;
                         }
                     }
@@ -334,7 +354,9 @@ impl SlpFile {
                         let player_color = player_index * 16 + relative_index;
 
                         for _ in 0..length {
-                            shape.pixels[(y * width + x) as usize] = player_color | relative_index;
+                            let loc = (y * width + x) as usize;
+                            shape.pixels[loc] = player_color | relative_index;
+                            shape.commands[loc] = DrawCommand::Remap;
                             x += 1;
                         }
                     }
@@ -342,16 +364,10 @@ impl SlpFile {
                     // Shadow pixels
                     0b1011 => {
                         let length = try!(FourUpperBit.decode(cmd_byte, cursor));
-                        // TODO: Render the shadow instead of skipping
-                        // The length is determined as in cases 6, 7 and 0x0a. For the length
-                        // of the run, the destination pixels already in the buffer are used
-                        // as a lookup into a "shadow table" and this lookup pixel is then
-                        // used to draw into the buffer. The shadow table is typically a
-                        // color-tinted variation of the real color table, and is generally
-                        // used to draw things like the red-tinted checkerboard sprites when
-                        // you try to place a building in an area where it cannot be placed.
-                        x += length as u32;
-                        println!("TODO: skipped {} instead of drawing the shadow", length);
+                        for _ in 0..length {
+                            let loc = (y * width + x) as usize;
+                            shape.commands[loc] = DrawCommand::Shadow;
+                        }
                     }
 
                     // Extended

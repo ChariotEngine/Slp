@@ -339,6 +339,7 @@ impl SlpFile {
                     0b0111 => {
                         let length = try!(FourUpperBit.decode(cmd_byte, cursor));
                         let color = try!(cursor.read_u8());
+
                         for _ in 0..length {
                             let loc = (y * width + x) as usize;
                             shape.pixels[loc] = color;
@@ -364,8 +365,10 @@ impl SlpFile {
                     // Shadow pixels
                     0b1011 => {
                         let length = try!(FourUpperBit.decode(cmd_byte, cursor));
+                        println!("Shadow len {}", length);
                         for _ in 0..length {
                             let loc = (y * width + x) as usize;
+                            println!("Shadow @ {}", loc);
                             shape.commands[loc] = DrawCommand::Shadow;
                             x += 1;
                         }

@@ -62,4 +62,6 @@ pub use slp::SlpFile;
 pub use slp::SlpHeader;
 pub use slp::SlpLogicalShape;
 pub use slp::SlpPixels;
+pub use slp::SlpDrawCommands;
 pub use slp::SlpShapeHeader;
+pub use slp::DrawCommand;
